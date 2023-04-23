@@ -8,8 +8,8 @@ const {startBroadCast} = require('./BroadCast');
 const {startServer} = require('./SocketIO');
 const {insertUser} = require('./DBConnector');
 
-// startBroadCast();
-// startServer();
+startBroadCast();
+startServer();
 
 
-insertUser();
+// insertUser();

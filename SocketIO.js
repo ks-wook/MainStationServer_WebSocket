@@ -1,5 +1,9 @@
 var ServerPort = 8710;
 
+// client 관리 딕셔너리
+    // TEMP : 
+var clients = {};
+
 function startServer() {
 
     const express = require('express');
@@ -8,9 +12,7 @@ function startServer() {
     const io = require('socket.io')(http);
     const { Server } = require('http');
     
-    // client 관리 딕셔너리
-    // TEMP : 
-    var clients = {};
+    
 
 
     app.get('/', (req, res) => {
@@ -68,3 +70,4 @@ function OnDisconnect(socket, clientId) {
 
 
 module.exports = {startServer};
+
