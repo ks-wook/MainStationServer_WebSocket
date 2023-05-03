@@ -6,10 +6,15 @@
 
 const {startBroadCast} = require('./BroadCast');
 const {startServer} = require('./SocketIO');
-const {insertUser} = require('./DBConnector');
+const {insert_db, select_db} = require('./DBConnector');
 
 startBroadCast();
 startServer();
 
 
-// insertUser();
+
+const dummyID = new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04, 0x05]);
+
+
+
+// select_db('user', dummyID);

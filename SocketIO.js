@@ -1,14 +1,16 @@
 const {insert_db, select_db, update_db} = require('./DBConnector');
-
+const {JobQueue} = require('./JobQueue');
 
 
 // client 관리 딕셔너리
 var clients = {};
 var ServerPort = 8710;
 
+// db 업무 직렬화 처리를 위한 Queue
+var db_job_queue = new JobQueue();
 
 function startServer() {
-
+    
     const express = require('express');
     const app = express();
     const http = require('http').createServer(app);
@@ -20,7 +22,7 @@ function startServer() {
     });
 
     // socket.io event
-    io.on('connection', OnConnection);
+    io.on('connect', OnConnect);
 
     // 3000 port open
     http.listen(ServerPort, () => {
@@ -30,7 +32,7 @@ function startServer() {
 }
 
 // Session
-function OnConnection(socket) {
+function OnConnect(socket) {
     console.log('-------------------------------');
     console.log(`a user connected : ${socket.id}`);
     console.log('-------------------------------');
@@ -83,25 +85,13 @@ function OnDisconnect(socket, clientId) {
 async function OnSelectDB(data) {
     
     console.log('-------------------------------');
-    console.log(`select ${data.table}, ${Buffer.from(data.condition).toString('hex')} request`);
+    console.log(`select ${data.table} request`);
     
-    var results = await select_db(data.table, data.condition);
-    var dbdata = null;
-    if(results == null) { // 조건에 맞는 데이터가 없는 경우 id를 0x00000000 으로 설정
-        console.debug('there are no data');
-        results = {
-            'id': 0x000000
-        }
-    }
-    else {
-        dbdata = {
-            'table': data.table,
-            'result': results[0]
-        }
-    }
+    var results = await select_db(data);
+    
 
     console.log('-------------------------------');
-    this.emit('select_result', dbdata);
+    this.emit('select_result', results);
 }
 
 async function OnInsertDB(data) {
@@ -119,22 +109,21 @@ async function OnInsertDB(data) {
     }
     
     // 발급된 ID와 함께 재전송
-    this.emit('insert_result', res_data);
+    this.emit('insert_result', data);
 }
 
 async function OnUpdateDB(data) {
     // 데이터에는 수정할 항목의 ID와 table, 수정하고자하는 col의 이름과 업데이트 값을 담아 가져와야 한다.
     console.log('-------------------------------');
-    console.log(`update ${data.table}, ${data.column}, ${Buffer.from(data.update_item_id).toString('hex')} request`);
+    console.log(`update ${data.table}, ${data.column}, request`);
     
-    var update_item_id = await update_db(data);
+    const result = await update_db(data);
 
     // 업데이트에 대해서는 수정된 아이템의 ID만 같이 전송함
     console.log('-------------------------------');
 
     var res_data = {
-        'ID': update_item_id,
-        'table': data.table
+        'updateOk': result,
     }
 
     this.emit('update_result', res_data);
@@ -142,4 +131,3 @@ async function OnUpdateDB(data) {
 
 
 module.exports = {startServer};
-
