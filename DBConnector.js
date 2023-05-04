@@ -34,11 +34,11 @@ async function select_db(data) {
             // ID의 타입을 확인
             const dataType = GetTypeByID(data.ID);
 
-            if(dataType == 'space') { // space ID로 검색하고자 하는 경우
+            if(dataType == 'Space') { // space ID로 검색하고자 하는 경우
                 const SpaceID = "X'" + Array.from(new Uint8Array(data.ID)).map(b => b.toString(16).padStart(2, '0')).join('') + "'";
                 WhereCondition += ` WHERE SpaceID = ${SpaceID}`
             }
-            else if(dataType == 'user') { // user ID로 검색하고자 하는 경우
+            else if(dataType == 'User') { // user ID로 검색하고자 하는 경우
                 const UserID = "X'" + data.ID.toString('hex') + "'";
                 WhereCondition += ` WHERE UserID = ${UserID}`
             }
@@ -88,36 +88,36 @@ async function insert_db(data) {
 
 
     // 테이블마다 가지고 있는 칼럼이 다르므로 경우를 나눠 처리
-    if(data.table == 'router') {
+    if(data.table == 'Router') {
         const MacAdr = Buffer.from(data.MacAdr.toString('hex'), 'hex');
-        query = `INSERT INTO router (ID, SSID, MAC) VALUES (${genearted_id}, ?, ?)`;
+        query = `INSERT INTO Router (ID, SSID, MAC) VALUES (${genearted_id}, ?, ?)`;
         values = [data.SSID, data.MAC];
     }
-    else if(data.table == 'space') {
-        query = `INSERT INTO space (ID, Familiar_name, Size_X, Size_Y) VALUES (${genearted_id}, ?, ?, ?)`;
+    else if(data.table == 'Space') {
+        query = `INSERT INTO Space (ID, Familiar_name, Size_X, Size_Y) VALUES (${genearted_id}, ?, ?, ?)`;
         values = [data.Familiar_name, data.Size_X, data.Size_Y];
     }
-    else if(data.table == 'beacon') {
+    else if(data.table == 'Beacon') {
         const State = Buffer.from([0x00, 0x00]);
-        query = `INSERT INTO beacon (ID, State, SpaceId, Pos_X, Pos_Y, Power, isPrimary) VALUES (${genearted_id}, ?, ?, ?, ?, ?, ?)`;
+        query = `INSERT INTO Beacon (ID, State, SpaceId, Pos_X, Pos_Y, Power, isPrimary) VALUES (${genearted_id}, ?, ?, ?, ?, ?, ?)`;
         values = [State, data.SpaceID, data.Pos_X, data.Pos_Y, data.Power, data.isPrimary];
     }
-    else if(data.table == 'pri_beacon') {
-        query = `INSERT INTO pri_beacon (BeaconID, SpaceID, Min_RSSI, Max_RSSI) VALUES (?, ?, ?, ?)`;
+    else if(data.table == 'Pri_beacon') {
+        query = `INSERT INTO Pri_beacon (BeaconID, SpaceID, Min_RSSI, Max_RSSI) VALUES (?, ?, ?, ?)`;
         values = [data.BeaconID, data.SpaceID, data.Min_RSSI, data.Max_RSSI];
     }
-    else if(data.table == 'pri_router') {
-        query = `INSERT INTO pri_router (RouterID, SpaceId, Min_RSSI, Max_RSSI) VALUES (?, ?, ?, ?)`;
+    else if(data.table == 'Pri_router') {
+        query = `INSERT INTO Pri_router (RouterID, SpaceId, Min_RSSI, Max_RSSI) VALUES (?, ?, ?, ?)`;
         values = [data.RouterID, data.SpaceID, data.Min_RSSI, data.Max_RSSI];
     }
-    else if(data.table == 'user') {
-        query = `INSERT INTO user (ID, User_name) VALUES (${genearted_id}, ?)`;
+    else if(data.table == 'User') {
+        query = `INSERT INTO User (ID, User_name) VALUES (${genearted_id}, ?)`;
         values = [data.User_name];
     }
-    else if(data.table == 'device') {
+    else if(data.table == 'Device') {
         const State = Buffer.from([0x00, 0x00]); // state는 최초 삽입 시, 00으로 들어가게 된다.
         const UserID = Buffer.from(data.UserID.toString('hex'), 'hex'); // 주인의 ID는 user에 속한 ID여야 한다.
-        query = `INSERT INTO device (ID, Familiar_name, State, UserID) VALUES (${genearted_id}, ?, ?, ?)`;
+        query = `INSERT INTO Device (ID, Familiar_name, State, UserID) VALUES (${genearted_id}, ?, ?, ?)`;
         values = [data.Familiar_name, State, data.UserID];
     }
     else {
@@ -161,11 +161,11 @@ async function update_db(data) {
             // ID의 타입을 확인
             const dataType = GetTypeByID(data.ID);
     
-            if(dataType == 'space') { // space ID로 검색하고자 하는 경우
+            if(dataType == 'Space') { // space ID로 검색하고자 하는 경우
                 const SpaceID = "X'" + Array.from(new Uint8Array(data.ID)).map(b => b.toString(16).padStart(2, '0')).join('') + "'";
                 WhereCondition += ` WHERE SpaceID = ${SpaceID}`
             }
-            else if(dataType == 'user') { // user ID로 검색하고자 하는 경우
+            else if(dataType == 'User') { // user ID로 검색하고자 하는 경우
                 const UserID = "X'" + Array.from(new Uint8Array(data.ID)).map(b => b.toString(16).padStart(2, '0')).join('') + "'";
                 WhereCondition += ` WHERE UserID = ${UserID}`
             }
@@ -218,19 +218,19 @@ function GenerateID(type) {
 
     const data = Buffer.alloc(6);
 
-    if(type == 'user') { // 유저 ID 생성
+    if(type == 'User') { // 유저 ID 생성
       data[0] = Math.floor(Math.random() * 16) + 16;
     }
-    else if(type == 'space') { // space ID 생성
+    else if(type == 'Space') { // space ID 생성
       data[0] = Math.floor(Math.random() * 32) + 32;
     }
-    else if(type == 'router') { // router ID 생성
+    else if(type == 'Router') { // router ID 생성
       data[0] = Math.floor(Math.random() * 64) + 64;
     }
-    else if(type == 'device') { // device ID 생성
+    else if(type == 'Device') { // device ID 생성
       data[0] = Math.floor(Math.random() * 96) + 64;
     }
-    else if(type == 'beacon') { // beacon ID 생성
+    else if(type == 'Beacon') { // beacon ID 생성
       data[0] = Math.floor(Math.random() * 144) + 80;
     }
 
@@ -259,16 +259,16 @@ function GenerateID(type) {
 function GetTypeByID(id) {
     const firstByte = id[0];
     if (firstByte >= 16 && firstByte < 32) {
-        return 'user';
+        return 'User';
     } 
     else if (firstByte >= 32 && firstByte < 64) {
-        return 'space';
+        return 'Space';
     } 
     else if (firstByte >= 64 && firstByte < 96) {
-        return 'device';
+        return 'Device';
     } 
     else if (firstByte >= 80 && firstByte < 224) {
-        return 'beacon';
+        return 'Beacon';
     } 
     else {
         return null; // Invalid ID

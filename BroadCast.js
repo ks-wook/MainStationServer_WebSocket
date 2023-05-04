@@ -35,6 +35,20 @@ function startBroadCast() {
 
 function getServerAddress() {
     const ifaces = os.networkInterfaces();
+    
+    // Rasberrypi
+    for(let iface of Object.values(ifaces)) {
+        for(let info of iface) {
+                if(info.family === 'IPv4' && !info.internal) {
+                    console.log(info.address);
+                    return info.address;
+                }
+            }
+    }
+    
+    
+    // Window
+    /*
     let address;
 
     Object.keys(ifaces).forEach((ifname) => {
@@ -51,6 +65,7 @@ function getServerAddress() {
     });
 
     return address
+    */
 }
 
 module.exports = {
