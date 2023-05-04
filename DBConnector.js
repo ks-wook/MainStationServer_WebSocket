@@ -2,13 +2,19 @@ const mysql = require('mysql2/promise');
 const config = require('./config.json');
 
 
+function processMessage(message) {
+    const { task, args } = message;
+    const result = task(...args); // 함수 실행
+}
+
+
 function connectDatabase() {
   const connection = mysql.createConnection({
     host: '127.0.0.1',
-    port: '3307',
+    port: config.port,
     user: config.id,
     password: config.password,
-    database: 'toget-home_db'
+    database: config.database
   });
 
   return connection;
@@ -16,13 +22,12 @@ function connectDatabase() {
 
 async function select_db(data) {
 
-
     var WhereCondition = "";
 
     // 쿼리문 조립
     if(data.ID != null) {
         if(data.setTarget == 1) { // ID의 값으로 하나의 아이템을 검색하는 경우
-            const TargetID = "X'" + data.ID.toString('hex') + "'";
+            const TargetID = "X'" + Array.from(new Uint8Array(data.ID)).map(b => b.toString(16).padStart(2, '0')).join('') + "'";
             WhereCondition = ` Where ID = ${TargetID}`;
         }
         else {
@@ -30,7 +35,7 @@ async function select_db(data) {
             const dataType = GetTypeByID(data.ID);
 
             if(dataType == 'space') { // space ID로 검색하고자 하는 경우
-                const SpaceID = "X'" + data.ID.toString('hex') + "'";
+                const SpaceID = "X'" + Array.from(new Uint8Array(data.ID)).map(b => b.toString(16).padStart(2, '0')).join('') + "'";
                 WhereCondition += ` WHERE SpaceID = ${SpaceID}`
             }
             else if(dataType == 'user') { // user ID로 검색하고자 하는 경우
@@ -64,7 +69,7 @@ async function select_db(data) {
     try {
 
         const [results, fields] = await connection.execute(selectQuery);
-        return results
+        return results;
         
     } catch (error) {
         console.error('Error inserting data:', error);
@@ -94,19 +99,14 @@ async function insert_db(data) {
     }
     else if(data.table == 'beacon') {
         const State = Buffer.from([0x00, 0x00]);
-        const SpaceId = Buffer.from(data.SpaceID.toString('hex'), 'hex');
         query = `INSERT INTO beacon (ID, State, SpaceId, Pos_X, Pos_Y, Power, isPrimary) VALUES (${genearted_id}, ?, ?, ?, ?, ?, ?)`;
-        values = [State, SpaceId, data.Pos_X, data.Pos_Y, data.Power, data.isPrimary];
+        values = [State, data.SpaceID, data.Pos_X, data.Pos_Y, data.Power, data.isPrimary];
     }
     else if(data.table == 'pri_beacon') {
-        const State = Buffer.from([0x00, 0x00]);
-        const SpaceId = Buffer.from(data.SpaceID.toString('hex'), 'hex');
         query = `INSERT INTO pri_beacon (BeaconID, SpaceID, Min_RSSI, Max_RSSI) VALUES (?, ?, ?, ?)`;
         values = [data.BeaconID, data.SpaceID, data.Min_RSSI, data.Max_RSSI];
     }
     else if(data.table == 'pri_router') {
-        const State = Buffer.from([0x00, 0x00]);
-        const SpaceId = Buffer.from(data.SpaceId.toString('hex'), 'hex');
         query = `INSERT INTO pri_router (RouterID, SpaceId, Min_RSSI, Max_RSSI) VALUES (?, ?, ?, ?)`;
         values = [data.RouterID, data.SpaceID, data.Min_RSSI, data.Max_RSSI];
     }
@@ -118,7 +118,7 @@ async function insert_db(data) {
         const State = Buffer.from([0x00, 0x00]); // state는 최초 삽입 시, 00으로 들어가게 된다.
         const UserID = Buffer.from(data.UserID.toString('hex'), 'hex'); // 주인의 ID는 user에 속한 ID여야 한다.
         query = `INSERT INTO device (ID, Familiar_name, State, UserID) VALUES (${genearted_id}, ?, ?, ?)`;
-        values = [data.Familiar_name, State, UserID];
+        values = [data.Familiar_name, State, data.UserID];
     }
     else {
         console.log('error : there are no table');
@@ -134,7 +134,13 @@ async function insert_db(data) {
         console.error('Error inserting data:', error);
     } finally {
         connection.end();
-        return genearted_id;
+
+        var res_data = {
+            'ID': genearted_id,
+            'table': data.table
+        }
+        
+        return res_data;
     }
 
 }
@@ -142,11 +148,13 @@ async function insert_db(data) {
 async function update_db(data) {
 
     var WhereCondition = "";
-
+    var updateOk = 0;
+    var newValue = data.newValue;
+    
     if(data.ID != null) {
 
         if(data.setTarget == 1) { // ID의 값으로 하나의 아이템을 검색하는 경우
-            const TargetID = "X'" + data.ID.toString('hex') + "'";
+            const TargetID = "X'" + Array.from(new Uint8Array(data.ID)).map(b => b.toString(16).padStart(2, '0')).join('') + "'";
             WhereCondition = ` Where ID = ${TargetID}`;
         }
         else {
@@ -154,21 +162,20 @@ async function update_db(data) {
             const dataType = GetTypeByID(data.ID);
     
             if(dataType == 'space') { // space ID로 검색하고자 하는 경우
-                const SpaceID = "X'" + data.ID.toString('hex') + "'";
+                const SpaceID = "X'" + Array.from(new Uint8Array(data.ID)).map(b => b.toString(16).padStart(2, '0')).join('') + "'";
                 WhereCondition += ` WHERE SpaceID = ${SpaceID}`
             }
             else if(dataType == 'user') { // user ID로 검색하고자 하는 경우
-                const UserID = "X'" + data.ID.toString('hex') + "'";
+                const UserID = "X'" + Array.from(new Uint8Array(data.ID)).map(b => b.toString(16).padStart(2, '0')).join('') + "'";
                 WhereCondition += ` WHERE UserID = ${UserID}`
             }
             else { // 비적합한 ID
                 console.log ("error : it's invalid ID");
-                return;
+                updateOk = 0;
             }
         }
     }
     
-
     if(data.isPrimary == true) { // isPrimary = true 인 아이템을 찾고 싶은 경우
         if(WhereCondition != "") {
             WhereCondition += ' AND';
@@ -180,12 +187,6 @@ async function update_db(data) {
         WhereCondition += ' isPrimary = 1';
     }
 
-    // 바이트 배열의 수정인 경우 DB처리를 위해 문자열 변환 -> 바이트 배열 전환 과정을 서버에서 거쳐야함
-    // 클라이언트에서 받은 바이트 배열은 바로 처리가 불가능
-    if(Buffer.isBuffer(data.newValue)) {
-        data.newValue = Buffer.from(data.newValue.toString('hex'), 'hex');
-    }
-
     const sql = `UPDATE ${data.table} SET ${data.column} = ? ` + WhereCondition;
     const values = [data.newValue];
 
@@ -195,15 +196,20 @@ async function update_db(data) {
     try {
         
         const [rows, fields] = await connection.execute(sql, values);
-
         console.log(`${data.column} row(s) update complete`);
 
     } catch (error) {
         console.error(`Error updating data: ${error}`);
-        return 0;
+        updateOk = 0;
     }
 
-    return 1;
+    updateOk = 1;
+
+    var res_data = {
+        'updateOk': updateOk,
+    }
+
+    return res_data;
 }
 
 

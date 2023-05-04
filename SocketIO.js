@@ -1,13 +1,13 @@
 const {insert_db, select_db, update_db} = require('./DBConnector');
-const {JobQueue} = require('./JobQueue');
+const { Worker } = require('worker_threads');
+const worker = new Worker('./WorkerProcess.js');
 
 
 // client 관리 딕셔너리
 var clients = {};
 var ServerPort = 8710;
 
-// db 업무 직렬화 처리를 위한 Queue
-var db_job_queue = new JobQueue();
+
 
 function startServer() {
     
@@ -24,11 +24,12 @@ function startServer() {
     // socket.io event
     io.on('connect', OnConnect);
 
-    // 3000 port open
+    // 8710 port open
     http.listen(ServerPort, () => {
         console.log(`listening on *: ${ServerPort}`);
     });
 
+    
 }
 
 // Session
@@ -52,6 +53,19 @@ function OnConnect(socket) {
     socket.on('select', OnSelectDB);
     socket.on('insert', OnInsertDB);
     socket.on('update', OnUpdateDB);
+
+    // db worker thread 이벤트 등록
+    worker.on('message', (message) => {
+        if(message.type == 'select') {
+            socket.emit('select_result', message.results);
+        }
+        else if(message.type == 'insert') {
+            socket.emit('insert_result', message.results);
+        }
+        else if(message.type == 'update') {
+            socket.emit('update_result', message.results);
+        }
+    }); 
 }
 
 function OnTestRequest(data) {
@@ -86,12 +100,13 @@ async function OnSelectDB(data) {
     
     console.log('-------------------------------');
     console.log(`select ${data.table} request`);
-    
-    var results = await select_db(data);
-    
 
+    // 실행시킬 작업을 워커 스레드로 전송
+    worker.postMessage({"type": 'select', "data": data});
+
+    // await select_db(data, this);
+    
     console.log('-------------------------------');
-    this.emit('select_result', results);
 }
 
 async function OnInsertDB(data) {
@@ -99,17 +114,12 @@ async function OnInsertDB(data) {
     console.log('-------------------------------');
     console.log(`insert ${data.table} request`);
     
-    var generated_id = await insert_db(data);
+    // await insert_db(data, this);
+    worker.postMessage({"type": 'insert', "data": data});
+
 
     console.log('-------------------------------');
     
-    var res_data = {
-        'ID': generated_id,
-        'table': data.table
-    }
-    
-    // 발급된 ID와 함께 재전송
-    this.emit('insert_result', data);
 }
 
 async function OnUpdateDB(data) {
@@ -117,16 +127,10 @@ async function OnUpdateDB(data) {
     console.log('-------------------------------');
     console.log(`update ${data.table}, ${data.column}, request`);
     
-    const result = await update_db(data);
+    worker.postMessage({"type": 'update', "data": data});
 
     // 업데이트에 대해서는 수정된 아이템의 ID만 같이 전송함
     console.log('-------------------------------');
-
-    var res_data = {
-        'updateOk': result,
-    }
-
-    this.emit('update_result', res_data);
 }
 
 

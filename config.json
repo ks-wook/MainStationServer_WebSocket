@@ -1,4 +1,6 @@
 {
   "id": "root",
-  "password": "your password"
+  "password": "yout password",
+  "port": 3307,
+  "database": "toget-home_db"
 }
