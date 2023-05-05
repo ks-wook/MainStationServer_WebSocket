@@ -7,6 +7,8 @@
 const {startBroadCast} = require('./BroadCast');
 const {startServer} = require('./SocketIO');
 
+const { CalPositionReq } = require('./IpscalConnector');
+
 startBroadCast();
 startServer();
 

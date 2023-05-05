@@ -1,6 +1,10 @@
 const {insert_db, select_db, update_db} = require('./DBConnector');
 const { Worker } = require('worker_threads');
-const worker = new Worker('./WorkerProcess.js');
+const { CalPositionReq } = require('./IpscalConnector');
+const DBworker = new Worker('./DBWorker.js');
+const IpscalWorker = new Worker('./IpscalWorker');
+
+
 
 
 // client 관리 딕셔너리
@@ -55,7 +59,7 @@ function OnConnect(socket) {
     socket.on('update', OnUpdateDB);
 
     // db worker thread 이벤트 등록
-    worker.on('message', (message) => {
+    DBworker.on('message', (message) => {
         if(message.type == 'select') {
             socket.emit('select_result', message.results);
         }
@@ -65,7 +69,31 @@ function OnConnect(socket) {
         else if(message.type == 'update') {
             socket.emit('update_result', message.results);
         }
-    }); 
+    });
+
+    IpscalWorker.on('message', (message) => {
+        // TODO : Position data 갱신
+        console.log(message);
+    });
+
+
+    // 스캔 이벤트 등록
+    socket.on("scan_res", (data) => {
+        const jsonString = JSON.stringify(data); // JSON 데이터를 문자열로 변환
+        const jsonObject = JSON.parse(jsonString); // 문자열을 JSON 형태로 파싱
+        const rssiRawData = jsonObject.rssi_raw_data; // 배열 데이터 추출
+        
+        console.log(rssiRawData);
+
+        // 배열 처리 코드 작성
+        IpscalWorker.postMessage(rssiRawData);
+    });
+
+
+    // TEST : 연결될 시 스캔 요청
+    socket.emit('scan_req', null);
+
+    
 }
 
 function OnTestRequest(data) {
@@ -102,7 +130,7 @@ async function OnSelectDB(data) {
     console.log(`select ${data.table} request`);
 
     // 실행시킬 작업을 워커 스레드로 전송
-    worker.postMessage({"type": 'select', "data": data});
+    DBworker.postMessage({"type": 'select', "data": data});
 
     // await select_db(data, this);
     
@@ -115,7 +143,7 @@ async function OnInsertDB(data) {
     console.log(`insert ${data.table} request`);
     
     // await insert_db(data, this);
-    worker.postMessage({"type": 'insert', "data": data});
+    DBworker.postMessage({"type": 'insert', "data": data});
 
 
     console.log('-------------------------------');
@@ -127,7 +155,7 @@ async function OnUpdateDB(data) {
     console.log('-------------------------------');
     console.log(`update ${data.table}, ${data.column}, request`);
     
-    worker.postMessage({"type": 'update', "data": data});
+    DBworker.postMessage({"type": 'update', "data": data});
 
     // 업데이트에 대해서는 수정된 아이템의 ID만 같이 전송함
     console.log('-------------------------------');

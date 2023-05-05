@@ -47,25 +47,25 @@ function getServerAddress() {
     }
     
     
-    // Window
-    /*
-    let address;
 
-    Object.keys(ifaces).forEach((ifname) => {
-        ifaces[ifname].forEach((iface) => {
-            if(iface.family !== 'IPv4' || iface.internal !== false) {
-                return;
-            }
+    // // Window
+    // let address;
 
-            if(ifname === 'Wi-Fi') {
-                address = iface.address;
-                return;
-            }
-        });
-    });
+    // Object.keys(ifaces).forEach((ifname) => {
+    //     ifaces[ifname].forEach((iface) => {
+    //         if(iface.family !== 'IPv4' || iface.internal !== false) {
+    //             return;
+    //         }
+
+    //         if(ifname === 'Wi-Fi') {
+    //             address = iface.address;
+    //             return;
+    //         }
+    //     });
+    // });
 
     return address
-    */
+    
 }
 
 module.exports = {
