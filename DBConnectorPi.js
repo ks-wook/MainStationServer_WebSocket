@@ -26,25 +26,22 @@ async function select_db(data) {
 
     // 쿼리문 조립
     if(data.ID != null) {
-        if(data.setTarget == 1) { // ID의 값으로 하나의 아이템을 검색하는 경우
-            const TargetID = "X'" + Array.from(new Uint8Array(data.ID)).map(b => b.toString(16).padStart(2, '0')).join('') + "'";
-            WhereCondition = ` Where ID = ${TargetID}`;
+        if(data.setTarget == '1') { // ID의 값으로 하나의 아이템을 검색하는 경우
+            WhereCondition = ` Where ID = x'${data.ID}'`;
         }
         else {
             // ID의 타입을 확인
             const dataType = GetTypeByID(data.ID);
 
-            if(dataType == 'Space') { // space ID로 검색하고자 하는 경우
-                const SpaceID = "X'" + Array.from(new Uint8Array(data.ID)).map(b => b.toString(16).padStart(2, '0')).join('') + "'";
-                WhereCondition += ` WHERE SpaceID = ${SpaceID}`
+            if(dataType == 'space') { // space ID로 검색하고자 하는 경우
+                WhereCondition += ` WHERE SpaceID = x'${data.ID}'`
             }
-            else if(dataType == 'User') { // user ID로 검색하고자 하는 경우
-                const UserID = "X'" + data.ID.toString('hex') + "'";
-                WhereCondition += ` WHERE UserID = ${UserID}`
+            else if(dataType == 'user') { // user ID로 검색하고자 하는 경우
+                WhereCondition += ` WHERE UserID = x'${data.ID}'`
             }
             else { // 비적합한 ID
                 console.log ("error : it's invalid ID");
-                return;
+                updateOk = 0;
             }
         }
 
@@ -89,9 +86,9 @@ async function insert_db(data) {
 
     // 테이블마다 가지고 있는 칼럼이 다르므로 경우를 나눠 처리
     if(data.table == 'Router') {
-        const MacAdr = Buffer.from(data.MacAdr.toString('hex'), 'hex');
+        const MacAdr = Buffer.from(data.MacAdr, 'hex');
         query = `INSERT INTO Router (ID, SSID, MAC) VALUES (${genearted_id}, ?, ?)`;
-        values = [data.SSID, data.MAC];
+        values = [data.SSID, MacAdr];
     }
     else if(data.table == 'Space') {
         query = `INSERT INTO Space (ID, Familiar_name, Size_X, Size_Y) VALUES (${genearted_id}, ?, ?, ?)`;
@@ -99,16 +96,24 @@ async function insert_db(data) {
     }
     else if(data.table == 'Beacon') {
         const State = Buffer.from([0x00, 0x00]);
+        const SpaceID = Buffer.from(data.SpaceID, 'hex'); // 16진수 문자열을 이진 데이터로 변환
+
         query = `INSERT INTO Beacon (ID, State, SpaceId, Pos_X, Pos_Y, Power, isPrimary) VALUES (${genearted_id}, ?, ?, ?, ?, ?, ?)`;
-        values = [State, data.SpaceID, data.Pos_X, data.Pos_Y, data.Power, data.isPrimary];
+        values = [State, SpaceID, parseFloat(data.Pos_X), parseFloat(data.Pos_Y), parseInt(data.Power), data.isPrimary];
     }
     else if(data.table == 'Pri_beacon') {
         query = `INSERT INTO Pri_beacon (BeaconID, SpaceID, Min_RSSI, Max_RSSI) VALUES (?, ?, ?, ?)`;
-        values = [data.BeaconID, data.SpaceID, data.Min_RSSI, data.Max_RSSI];
+        const BeaconID = Buffer.from(data.BeaconID, 'hex'); // 16진수 문자열을 이진 데이터로 변환
+        const SpaceID = Buffer.from(data.SpaceID, 'hex'); // 16진수 문자열을 이진 데이터로 변환
+
+        values = [BeaconID, SpaceID, parseInt(data.Min_RSSI), parseInt(data.Max_RSSI)];
     }
-    else if(data.table == 'Pri_router') {
+    else if(data.table == 'Pri_beacon') {
         query = `INSERT INTO Pri_router (RouterID, SpaceId, Min_RSSI, Max_RSSI) VALUES (?, ?, ?, ?)`;
-        values = [data.RouterID, data.SpaceID, data.Min_RSSI, data.Max_RSSI];
+        const SpaceID = Buffer.from(data.SpaceID, 'hex'); // 16진수 문자열을 이진 데이터로 변환
+        const RouterID = Buffer.from(data.RouterID, 'hex'); // 16진수 문자열을 이진 데이터로 변환
+
+        values = [RouterID, SpaceID, parseInt(data.Min_RSSI), parseInt(data.Max_RSSI)];
     }
     else if(data.table == 'User') {
         query = `INSERT INTO User (ID, User_name) VALUES (${genearted_id}, ?)`;
@@ -116,9 +121,9 @@ async function insert_db(data) {
     }
     else if(data.table == 'Device') {
         const State = Buffer.from([0x00, 0x00]); // state는 최초 삽입 시, 00으로 들어가게 된다.
-        const UserID = Buffer.from(data.UserID.toString('hex'), 'hex'); // 주인의 ID는 user에 속한 ID여야 한다.
+        const UserID = Buffer.from(data.UserID, 'hex'); // 주인의 ID는 user에 속한 ID여야 한다.
         query = `INSERT INTO Device (ID, Familiar_name, State, UserID) VALUES (${genearted_id}, ?, ?, ?)`;
-        values = [data.Familiar_name, State, data.UserID];
+        values = [data.Familiar_name, State, UserID];
     }
     else {
         console.log('error : there are no table');
@@ -153,21 +158,18 @@ async function update_db(data) {
     
     if(data.ID != null) {
 
-        if(data.setTarget == 1) { // ID의 값으로 하나의 아이템을 검색하는 경우
-            const TargetID = "X'" + Array.from(new Uint8Array(data.ID)).map(b => b.toString(16).padStart(2, '0')).join('') + "'";
-            WhereCondition = ` Where ID = ${TargetID}`;
+        if(data.setTarget == '1') { // ID의 값으로 하나의 아이템을 검색하는 경우
+            WhereCondition = ` Where ID = x'${data.ID}'`;
         }
         else {
             // ID의 타입을 확인
             const dataType = GetTypeByID(data.ID);
-    
+
             if(dataType == 'Space') { // space ID로 검색하고자 하는 경우
-                const SpaceID = "X'" + Array.from(new Uint8Array(data.ID)).map(b => b.toString(16).padStart(2, '0')).join('') + "'";
-                WhereCondition += ` WHERE SpaceID = ${SpaceID}`
+                WhereCondition += ` WHERE SpaceID = x'${data.ID}'`
             }
             else if(dataType == 'User') { // user ID로 검색하고자 하는 경우
-                const UserID = "X'" + Array.from(new Uint8Array(data.ID)).map(b => b.toString(16).padStart(2, '0')).join('') + "'";
-                WhereCondition += ` WHERE UserID = ${UserID}`
+                WhereCondition += ` WHERE UserID = x'${data.ID}'`
             }
             else { // 비적합한 ID
                 console.log ("error : it's invalid ID");
@@ -176,7 +178,7 @@ async function update_db(data) {
         }
     }
     
-    if(data.isPrimary == true) { // isPrimary = true 인 아이템을 찾고 싶은 경우
+    if(data.isPrimary == '1') { // isPrimary = true 인 아이템을 찾고 싶은 경우
         if(WhereCondition != "") {
             WhereCondition += ' AND';
         }
@@ -188,13 +190,28 @@ async function update_db(data) {
     }
 
     const sql = `UPDATE ${data.table} SET ${data.column} = ? ` + WhereCondition;
-    const values = [data.newValue];
+    let values;
+
+    if(data.column == 'State' || data.comumn == 'UserID' || data.column == 'SpaceID' || data.column == 'DeviceID') {
+        const byteValue = Buffer.from(data.newValue, 'hex');
+        values = [byteValue];
+
+    }
+    else if(data.column == 'Pos_X' || data.comumn == 'Pos_y' || data.column == 'Size_X' || data.column == 'Size_y') {
+        values = [parseFloat(data.newValue)]
+    }
+    else if(data.column == 'Power' || data.column == 'Interval_time' || data.comumn == 'Expire_count' || data.column == 'Min_RSSI' || data.column == 'Max_RSSI') {
+        values = [parseInt(data.newValue)]
+    }
+    else {
+        values = [data.newValue];
+    }
 
     const connection = await connectDatabase();
 
     // 조립된 쿼리문 실행
     try {
-        
+        console.log(sql);
         const [rows, fields] = await connection.execute(sql, values);
         console.log(`${data.column} row(s) update complete`);
 
@@ -257,7 +274,8 @@ function GenerateID(type) {
 
 // ID를 이용하여 어떤 타입의 ID인지 확인 후 반환
 function GetTypeByID(id) {
-    const firstByte = id[0];
+    const byteArray = Buffer.from(id, 'hex');
+    const firstByte = byteArray[0];
     if (firstByte >= 16 && firstByte < 32) {
         return 'User';
     } 

@@ -1,16 +1,12 @@
-const {insert_db, select_db, update_db} = require('./DBConnector');
 const { Worker } = require('worker_threads');
 const { CalPositionReq } = require('./IpscalConnector');
-const DBworker = new Worker('./DBWorker.js');
 const IpscalWorker = new Worker('./IpscalWorker');
-
-
+const DBworker = new Worker('./DBWorker.js');
 
 
 // client 관리 딕셔너리
 var clients = {};
 var ServerPort = 8710;
-
 
 
 function startServer() {
@@ -91,7 +87,7 @@ function OnConnect(socket) {
 
 
     // TEST : 연결될 시 스캔 요청
-    socket.emit('scan_req', null);
+    // socket.emit('scan_req', null);
 
     
 }

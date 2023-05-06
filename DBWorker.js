@@ -1,5 +1,18 @@
-const {insert_db, select_db, update_db} = require('./DBConnector');
 const { parentPort } = require('worker_threads');
+const os = require('os');
+
+let insert_db, select_db, update_db;
+
+if (os.platform() === 'win32') { // 윈도우 실행
+    console.log('Server on Window...');
+    ({ insert_db, select_db, update_db } = require('./DBConnectorWin'));
+
+} 
+else { // 리눅스 실행
+    console.log('Server on Linux...');
+    ({ insert_db, select_db, update_db } = require('./DBConnectorPi'));
+
+}
 
 parentPort.on('message', async (message) => {
     

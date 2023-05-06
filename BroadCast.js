@@ -36,36 +36,38 @@ function startBroadCast() {
 function getServerAddress() {
     const ifaces = os.networkInterfaces();
     
-    // Rasberrypi
-    for(let iface of Object.values(ifaces)) {
-        for(let info of iface) {
-                if(info.family === 'IPv4' && !info.internal) {
-                    console.log(info.address);
-                    return info.address;
+    if (os.platform() === 'win32') { // 윈도우 실행
+        // Window
+        let address;
+
+        Object.keys(ifaces).forEach((ifname) => {
+            ifaces[ifname].forEach((iface) => {
+                if(iface.family !== 'IPv4' || iface.internal !== false) {
+                    return;
                 }
-            }
+
+                if(ifname === 'Wi-Fi') {
+                    address = iface.address;
+                    return;
+                }
+            });
+        });
+
+        return address
+    
+    } 
+    else { // 리눅스 실행
+        // Rasberrypi
+        for(let iface of Object.values(ifaces)) {
+            for(let info of iface) {
+                    if(info.family === 'IPv4' && !info.internal) {
+                        console.log(info.address);
+                        return info.address;
+                    }
+                }
+        }
+    
     }
-    
-    
-
-    // // Window
-    // let address;
-
-    // Object.keys(ifaces).forEach((ifname) => {
-    //     ifaces[ifname].forEach((iface) => {
-    //         if(iface.family !== 'IPv4' || iface.internal !== false) {
-    //             return;
-    //         }
-
-    //         if(ifname === 'Wi-Fi') {
-    //             address = iface.address;
-    //             return;
-    //         }
-    //     });
-    // });
-
-    return address
-    
 }
 
 module.exports = {
