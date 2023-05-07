@@ -1,7 +1,7 @@
 const { Worker } = require('worker_threads');
-const { CalPositionReq } = require('./IpscalConnector');
-const IpscalWorker = new Worker('./IpscalWorker');
-const DBworker = new Worker('./DBWorker.js');
+const { CalPositionReq } = require('../Ips_cal/IpscalConnector');
+const IpscalWorker = new Worker('./Ips_cal/IpscalWorker');
+const DBworker = new Worker('./DB/DBWorker.js');
 
 
 // client 관리 딕셔너리
