@@ -1,5 +1,5 @@
 const mysql = require('mysql2/promise');
-const config = require('./config.json');
+const config = require('../config.json');
 
 
 function processMessage(message) {
@@ -96,10 +96,11 @@ async function insert_db(data) {
     }
     else if(data.table == 'Beacon') {
         const State = Buffer.from([0x00, 0x00]);
+        const BeaconID = Buffer.from(data.BeaconID, 'hex');
         const SpaceID = Buffer.from(data.SpaceID, 'hex'); // 16진수 문자열을 이진 데이터로 변환
 
-        query = `INSERT INTO Beacon (ID, State, SpaceId, Pos_X, Pos_Y, Power, isPrimary) VALUES (${genearted_id}, ?, ?, ?, ?, ?, ?)`;
-        values = [State, SpaceID, parseFloat(data.Pos_X), parseFloat(data.Pos_Y), parseInt(data.Power), data.isPrimary];
+        query = `INSERT INTO Beacon (ID, State, SpaceId, Pos_X, Pos_Y, Power, isPrimary) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+        values = [BeaconID, State, SpaceID, parseFloat(data.Pos_X), parseFloat(data.Pos_Y), parseInt(data.Power), data.isPrimary];
     }
     else if(data.table == 'Pri_beacon') {
         query = `INSERT INTO Pri_beacon (BeaconID, SpaceID, Min_RSSI, Max_RSSI) VALUES (?, ?, ?, ?)`;
@@ -229,6 +230,70 @@ async function update_db(data) {
     return res_data;
 }
 
+async function delete_db(data) {
+
+    var WhereCondition = "";
+
+    // 쿼리문 조립
+    if(data.ID != null) {
+        if(data.setTarget == '1') { // ID의 값으로 하나의 아이템을 검색하는 경우
+            WhereCondition = ` Where ID = x'${data.ID}'`;
+        }
+        else {
+            // ID의 타입을 확인
+            const dataType = GetTypeByID(data.ID);
+
+            if(dataType == 'Space') { // space ID로 검색하고자 하는 경우
+                WhereCondition += ` WHERE SpaceID = x'${data.ID}'`
+            }
+            else if(dataType == 'User') { // user ID로 검색하고자 하는 경우
+                WhereCondition += ` WHERE UserID = x'${data.ID}'`
+            }
+            else { // 비적합한 ID
+                console.log ("error : it's invalid ID");
+                updateOk = 0;
+            }
+        }
+
+    }
+
+    if(data.isPrimary == true) { // isPrimary = true 인 아이템을 찾고 싶은 경우
+        if(WhereCondition != "") {
+            WhereCondition += ' AND';
+        }
+        else {
+            WhereCondition += ' WHERE';
+        }
+        
+        WhereCondition += ' isPrimary = 1';
+    }
+    
+    var query = `DELETE FROM ${data.table}` + WhereCondition;
+    console.log(query);
+    const connection = await connectDatabase();
+
+    // 조립된 쿼리문 실행
+    try {
+
+        const results = await connection.execute(query);
+
+        var res_data = {
+            'deleteOk': 0,
+        }
+
+        if(results != null) {
+            res_data.deleteOk = 1;
+        }
+        
+        return res_data;
+        
+    } catch (error) {
+        console.error('Error inserting data:', error);
+    } finally {
+        connection.end();
+    }
+}
+
 
 // 서버에서 사용할 ID 6바이트 ID 발급
 function GenerateID(type) {
@@ -295,6 +360,6 @@ function GetTypeByID(id) {
 
 
 module.exports = {
-    select_db, insert_db, update_db
+    select_db, insert_db, update_db, delete_db
 };
 

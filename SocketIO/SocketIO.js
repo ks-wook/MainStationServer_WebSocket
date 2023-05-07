@@ -53,6 +53,7 @@ function OnConnect(socket) {
     socket.on('select', OnSelectDB);
     socket.on('insert', OnInsertDB);
     socket.on('update', OnUpdateDB);
+    socket.on('delete', OnDeleteDB);
 
     // db worker thread 이벤트 등록
     DBworker.on('message', (message) => {
@@ -64,6 +65,9 @@ function OnConnect(socket) {
         }
         else if(message.type == 'update') {
             socket.emit('update_result', message.results);
+        }
+        else if(message.type == 'delete') {
+            socket.emit('delete_result', message.results);
         }
     });
 
@@ -152,6 +156,17 @@ async function OnUpdateDB(data) {
     console.log(`update ${data.table}, ${data.column}, request`);
     
     DBworker.postMessage({"type": 'update', "data": data});
+
+    // 업데이트에 대해서는 수정된 아이템의 ID만 같이 전송함
+    console.log('-------------------------------');
+}
+
+async function OnDeleteDB(data) {
+    // 데이터에는 수정할 항목의 ID와 table, 수정하고자하는 col의 이름과 업데이트 값을 담아 가져와야 한다.
+    console.log('-------------------------------');
+    console.log(`delete ${data.table}, request`);
+    
+    DBworker.postMessage({"type": 'delete', "data": data});
 
     // 업데이트에 대해서는 수정된 아이템의 ID만 같이 전송함
     console.log('-------------------------------');
