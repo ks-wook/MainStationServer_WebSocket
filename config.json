@@ -2,7 +2,7 @@
   "users": [
     {
       "id": "root",
-      "password": "Dmy!bJ{OR!(k@13",
+      "password": "1234",
       "port": 3307,
 	"database": "toget_home_db"
     },
