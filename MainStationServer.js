@@ -9,6 +9,8 @@ const {startServer} = require('./SocketIO/SocketIO');
 
 const { CalPositionReq } = require('./Ips_cal/IpscalConnector');
 
+const { HomeServerConnector } = require('./HomeServer/HomeServerConnector');
+
 startBroadCast();
 startServer();
 
