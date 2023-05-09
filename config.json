@@ -1,6 +1,16 @@
 {
-  "id": "root",
-  "password": "Dmy!bJ{OR!(k@13",
-  "port": 3307,
-  "database": "toget-home_db"
+  "users": [
+    {
+      "id": "root",
+      "password": "Dmy!bJ{OR!(k@13",
+      "port": 3307,
+	"database": "toget_home_db"
+    },
+    {
+      "id": "HomeServer",
+      "password": "5678",
+      "port": 3307,
+	"database": "toget_home_db"
+    }
+  ]
 }

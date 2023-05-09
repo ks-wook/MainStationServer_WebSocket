@@ -1,39 +1,41 @@
 const { parentPort } = require('worker_threads');
 const os = require('os');
 
-let insert_db, select_db, update_db, delete_db;
+let insert_db, select_db, update_db, delete_db, http_get_db;
 
 if (os.platform() === 'win32') { // 윈도우 실행
-    console.log('Server on Window...');
-    ({ insert_db, select_db, update_db, delete_db } = require('./DBConnectorWin'));
+    ({ insert_db, select_db, update_db, delete_db, http_get_db } = require('./DBConnectorWin'));
 
 } 
 else { // 리눅스 실행
-    console.log('Server on Linux...');
-    ({ insert_db, select_db, update_db, delete_db } = require('./DBConnectorPi'));
+    ({ insert_db, select_db, update_db, delete_db, http_get_db } = require('./DBConnectorPi'));
 
 }
 
 parentPort.on('message', async (message) => {
     
-    var query = message.type;
-    var queryData = message.data;
+    var Command = message.type;
+    var Data = message.data;
 
-    if(query == 'select') {
-        var results = await select_db(queryData);
-        parentPort.postMessage({"type": query, "results": results});
+    if(Command == 'select') {
+        var results = await select_db(Data);
+        parentPort.postMessage({"type": Command, "results": results});
     }
-    else if(query == 'insert') {
-        var results = await insert_db(queryData);
-        parentPort.postMessage({"type": query, "results": results});
+    else if(Command == 'insert') {
+        var results = await insert_db(Data);
+        parentPort.postMessage({"type": Command, "results": results});
     }
-    else if(query == 'update') {
-        var results = await update_db(queryData);
-        parentPort.postMessage({"type": query, "results": results});
+    else if(Command == 'update') {
+        var results = await update_db(Data);
+        parentPort.postMessage({"type": Command, "results": results});
     }
-    else if(query == 'delete') {
-        var results = await delete_db(queryData);
-        parentPort.postMessage({"type": query, "results": results});
+    else if(Command == 'delete') {
+        var results = await delete_db(Data);
+        parentPort.postMessage({"type": Command, "results": results});
+    }
+    else if(Command == 'http_get') {
+        var results = await http_get_db();
+        parentPort.postMessage({"type": Command, "results": results});
     }
 
 });

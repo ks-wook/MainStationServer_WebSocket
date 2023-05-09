@@ -26,7 +26,7 @@ function startServer() {
 
     // 8710 port open
     http.listen(ServerPort, () => {
-        console.log(`listening on *: ${ServerPort}`);
+        console.log(`listening on MainStation Connection*:${ServerPort}`);
     });
 
     

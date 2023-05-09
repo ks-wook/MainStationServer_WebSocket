@@ -11,7 +11,7 @@ function startBroadCast() {
     // UDP broadcast
     broadcastSocket.bind(broadcastPort);
     broadcastSocket.on('listening', () => {
-    console.log(`broadcast Port : ${broadcastPort}`);
+    console.log(`listening on UDP Broadcasting*:${broadcastPort}`);
     });
 
     broadcastSocket.on('message', (message, rinfo) => {

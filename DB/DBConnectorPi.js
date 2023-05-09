@@ -12,10 +12,10 @@ function processMessage(message) {
 function connectDatabase() {
   const connection = mysql.createConnection({
     host: '127.0.0.1',
-    port: config.port,
-    user: config.id,
-    password: config.password,
-    database: config.database
+    port: config.users[0].port,
+    user: config.users[0].id,
+    password: config.users[0].password,
+    database: config.users[0].database
   });
 
   return connection;
