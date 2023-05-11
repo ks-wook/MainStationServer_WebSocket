@@ -29,11 +29,17 @@ async function select_db(data) {
     if(data.data_type == 'home' || data.data_type == 'Home') {
         sql = `SELECT * FROM home`;
     }
-    else if(data.data_type == 'router' || data.data_type == 'Router') {
-        sql = `SELECT * FROM router`;
-    }
     else if(data.data_type == 'space' || data.data_type == 'Space') {
         sql = `SELECT * FROM space`;
+    }
+    else if(data.data_type == 'user' || data.data_type == 'User') {
+        sql = `SELECT * FROM user`;
+    }
+    else if(data.data_type == 'device' || data.data_type == 'Device') {
+        sql = `SELECT * FROM device`;
+        if(data.user_id != undefined) {
+            sql += ` WHERE UserID = x'${data.user_id}'`
+        }
     }
     else if(data.data_type == 'beacon' || data.data_type == 'Beacon') {
         sql = `SELECT * FROM beacon`;
@@ -50,17 +56,11 @@ async function select_db(data) {
     else if(data.data_type == 'pri_beacon' || data.data_type == "Pri_Beacon") {
         sql = `SELECT * FROM pri_beacon`;
     }
+    else if(data.data_type == 'router' || data.data_type == 'Router') {
+        sql = `SELECT * FROM router`;
+    }
     else if(data.data_type == 'pri_router' || data.data_type == "Pri_Router") {
         sql = `SELECT * FROM pri_router`;
-    }
-    else if(data.data_type == 'user' || data.data_type == 'User') {
-        sql = `SELECT * FROM user`;
-    }
-    else if(data.data_type == 'device' || data.data_type == 'Device') {
-        sql = `SELECT * FROM device`;
-        if(data.user_id != undefined) {
-            sql += ` WHERE UserID = x'${data.user_id}'`
-        }
     }
     else if(data.data_type == 'pos_data' || data.data_type == 'Pos_Data' || data.data_type == 'pos_Data') {
         sql = `SELECT * FROM pos_data`;
@@ -90,14 +90,19 @@ async function select_db(data) {
                 jsonObject['interval_time'] = rowObject.Interval_time.toString();
                 jsonObject['expire_count'] = rowObject.Expire_count.toString();
             }
-            else if(data.data_type == 'router' || data.data_type == 'Router') {
-                jsonObject['id'] = rowObject.ID.toString('hex');
-                jsonObject['ssid'] = rowObject.SSID.toString('hex');
-                jsonObject['mac'] = rowObject.MAC.toString('hex');
-            }
             else if(data.data_type == 'space' || data.data_type == 'Space') {
                 jsonObject['id'] = rowObject.ID.toString('hex');
                 jsonObject['familiar_name'] = rowObject.Familiar_name;
+            }
+            else if(data.data_type == 'user' || data.data_type == 'User') {
+                jsonObject['id'] = rowObject.ID.toString('hex');
+                jsonObject['user_name'] = rowObject.User_name;
+            }
+            else if(data.data_type == 'device' || data.data_type == 'Device') {
+                jsonObject['id'] = rowObject.ID.toString('hex');
+                jsonObject['familiar_name'] = rowObject.Familiar_name;
+                jsonObject['state'] = rowObject.State.toString('hex');
+                jsonObject['user_id'] = rowObject.UserID.toString('hex');
             }
             else if(data.data_type == 'beacon' || data.data_type == 'Beacon') {
                 jsonObject['id'] = rowObject.ID.toString('hex');
@@ -113,21 +118,16 @@ async function select_db(data) {
                 jsonObject['min_rssi'] = rowObject.Min_RSSI.toString();
                 jsonObject['max_rssi'] = rowObject.Max_RSSI.toString();
             }
+            else if(data.data_type == 'router' || data.data_type == 'Router') {
+                jsonObject['id'] = rowObject.ID.toString('hex');
+                jsonObject['ssid'] = rowObject.SSID.toString('hex');
+                jsonObject['mac'] = rowObject.MAC.toString('hex');
+            }
             else if(data.data_type == 'pri_router' || data.data_type == "Pri_Router") {
                 jsonObject['router_id'] = rowObject.RouterID.toString('hex');
                 jsonObject['space_id'] = rowObject.SpaceID.toString('hex');
                 jsonObject['min_rssi'] = rowObject.Min_RSSI.toString();
                 jsonObject['max_rssi'] = rowObject.Max_RSSI.toString();
-            }
-            else if(data.data_type == 'user' || data.data_type == 'User') {
-                jsonObject['id'] = rowObject.ID.toString('hex');
-                jsonObject['user_name'] = rowObject.User_name;
-            }
-            else if(data.data_type == 'device' || data.data_type == 'Device') {
-                jsonObject['id'] = rowObject.ID.toString('hex');
-                jsonObject['familiar_name'] = rowObject.Familiar_name;
-                jsonObject['state'] = rowObject.State.toString('hex');
-                jsonObject['user_id'] = rowObject.UserID.toString('hex');
             }
             else if(data.data_type == 'pos_Data' || data.data_type == 'Pos_Data' || data.data_type == 'pos_data') {
                 jsonObject['device_id'] = rowObject.DeviceID.toString('hex');
@@ -172,15 +172,20 @@ async function insert_db(data) {
         query = `INSERT INTO home (Home_name, Interval_time, Expire_count) VALUES (?, ?, ?)`;
         values = [data.home_name, parseInt(Interval_time), parseInt(Expire_count)];
     }
-    else if(data.data_type == 'router' || data.data_type == 'Router') {
-        const MacAdr = Buffer.from(data.mac, 'hex');
-
-        query = `INSERT INTO router (ID, SSID, MAC) VALUES (${genearted_id}, ?, ?)`;
-        values = [data.ssid, MacAdr];
-    }
     else if(data.data_type == 'space' || data.data_type == 'Space') {
         query = `INSERT INTO space (ID, familiar_name, size_x, size_y) VALUES (${genearted_id}, ?, ?, ?)`;
         values = [data.familiar_name, data.size_x, data.size_y];
+    }
+    else if(data.data_type == 'user' || data.data_type == 'User') {
+        query = `INSERT INTO user (ID, User_name) VALUES (${genearted_id}, ?)`;
+        values = [data.user_name];
+    }
+    else if(data.data_type == 'device' || data.data_type == 'Device') {
+        const State = Buffer.from([0x00, 0x00]); // state는 최초 삽입 시, 00으로 들어가게 된다.
+        const UserID = Buffer.from(data.user_id, 'hex'); // 주인의 ID는 user에 속한 ID여야 한다.
+
+        query = `INSERT INTO device (ID, familiar_name, State, UserID) VALUES (${genearted_id}, ?, ?, ?)`;
+        values = [data.familiar_name, State, UserID];
     }
     else if(data.data_type == 'beacon' || data.data_type == 'Beacon') {
         const State = Buffer.from([0x00, 0x00]);
@@ -197,23 +202,18 @@ async function insert_db(data) {
         query = `INSERT INTO pri_beacon (BeaconID, SpaceID, Min_RSSI, Max_RSSI) VALUES (?, ?, ?, ?)`;
         values = [beacon_id, space_id, parseInt(data.min_rssi), parseInt(data.max_rssi)];
     }
+    else if(data.data_type == 'router' || data.data_type == 'Router') {
+        const MacAdr = Buffer.from(data.mac, 'hex');
+
+        query = `INSERT INTO router (ID, SSID, MAC) VALUES (${genearted_id}, ?, ?)`;
+        values = [data.ssid, MacAdr];
+    }
     else if(data.data_type == 'pri_router' || data.data_type == "Pri_Router") {
         const RouterID = Buffer.from(data.router_id, 'hex'); // 16진수 문자열을 이진 데이터로 변환
         const SpaceID = Buffer.from(data.space_id, 'hex'); // 16진수 문자열을 이진 데이터로 변환
 
         query = `INSERT INTO pri_router (RouterID, SpaceID, Min_RSSI, Max_RSSI) VALUES (?, ?, ?, ?)`;
         values = [RouterID, SpaceID, parseInt(data.min_rssi), parseInt(data.max_rssi)];
-    }
-    else if(data.data_type == 'user' || data.data_type == 'User') {
-        query = `INSERT INTO user (ID, User_name) VALUES (${genearted_id}, ?)`;
-        values = [data.user_name];
-    }
-    else if(data.data_type == 'device' || data.data_type == 'Device') {
-        const State = Buffer.from([0x00, 0x00]); // state는 최초 삽입 시, 00으로 들어가게 된다.
-        const UserID = Buffer.from(data.user_id, 'hex'); // 주인의 ID는 user에 속한 ID여야 한다.
-
-        query = `INSERT INTO device (ID, familiar_name, State, UserID) VALUES (${genearted_id}, ?, ?, ?)`;
-        values = [data.familiar_name, State, UserID];
     }
     else if(data.data_type == 'pos_data' || data.data_type == 'Pos_Data' || data.data_type == 'pos_Data') {
         const DeviceID = Buffer.from(data.device_id, 'hex'); 
@@ -260,77 +260,136 @@ async function insert_db(data) {
 
 async function update_db(data) {
 
-    var WhereCondition = "";
-    var update_ok = 0;
-    
-    if(data.id != undefined) {
+    var sql = "";
+    var columnCondition = "";
 
-        if(data.setTarget == '1') { // ID의 값으로 하나의 아이템을 검색하는 경우
-            WhereCondition = ` Where ID = x'${data.id}'`;
+    // 테이블마다 가지고 있는 칼럼이 다르므로 경우를 나눠 처리
+    if(data.data_type == 'home' || data.data_type == 'Home') {
+        sql = `UPDATE home SET`;
+        if(data.interval_time != undefined) {
+            columnCondition += ` Interval_time = ${data.interval_time}`;
         }
-        else {
-            // ID의 타입을 확인
-            const dataType = GetTypeByID(data.id);
-
-            if(dataType == 'space') { // space ID로 검색하고자 하는 경우
-                WhereCondition += ` WHERE SpaceID = x'${data.id}'`
+        if(data.expire_count != undefined) {
+            if(columnCondition != "") {
+                columnCondition += `,`;
             }
-            else if(dataType == 'user') { // user ID로 검색하고자 하는 경우
-                WhereCondition += ` WHERE UserID = x'${data.id}'`
+            columnCondition += ` Expire_count = ${data.expire_count}`;
+        }
+
+        sql += columnCondition + ` WHERE Home_name = '${data.home_name}'`;
+    }
+    else if(data.data_type == 'space' || data.data_type == 'Space') {
+        sql = `UPDATE space SET`;
+        if(data.size_x != undefined) {
+            columnCondition += ` Size_X = ${data.size_x}`;
+        }
+        if(data.size_y != undefined) {
+            if(columnCondition != "") {
+                columnCondition += `,`;
             }
-            else { // 비적합한 ID
-                console.log ("error : it's invalid ID");
-                update_ok = 0;
+            columnCondition += ` Size_Y = ${data.size_y}`;
+        }
+
+        sql += columnCondition + ` WHERE ID = x'${data.id}'`;
+    }
+    else if(data.data_type == 'user' || data.data_type == 'User') {
+        sql = `UPDATE user SET`;
+        if(data.user_name != undefined) {
+            columnCondition += ` User_name = '${data.user_name}'`;
+        }
+
+        sql += columnCondition + ` WHERE ID = x'${data.id}'`;
+    }
+    else if(data.data_type == 'device' || data.data_type == 'Device') {
+        sql = `UPDATE device SET`;
+        if(data.state != undefined) {
+            columnCondition += ` STATE = x'${data.state}'`
+        }
+
+        sql += columnCondition + ` WHERE ID = x'${data.id}'`
+    }
+    else if(data.data_type == 'beacon' || data.data_type == 'Beacon') {
+        sql = `UPDATE beacon SET`;
+        if(data.state != undefined) {
+            columnCondition += ` STATE = x'${data.state}'`
+        }
+        if(data.isprimary != undefined) {
+            if(columnCondition != "") {
+                columnCondition += `,`;
             }
+            columnCondition += ` isPrimary = ${data.isprimary}`;
         }
-    }
-    
-    if(data.isPrimary == '1') { // isPrimary = true 인 아이템을 찾고 싶은 경우
-        if(WhereCondition != "") {
-            WhereCondition += ' AND';
-        }
-        else {
-            WhereCondition += ' WHERE';
-        }
-        
-        WhereCondition += ' isPrimary = 1';
-    }
 
-    let values;
-
-    if(data.column == 'state' || data.column == 'user_id' || data.column == 'space_id' || data.column == 'device_id') {
-        const byteValue = Buffer.from(data.new_value, 'hex');
-        values = [byteValue];
-
-        if(data.column == 'user_id') {
-            data.column = 'UserID';
-        }
-        else if(data.column == 'space_id') {
-            data.column = 'SpaceID';
-        }
-        else if(data.column == 'device_id') {
-            data.column = 'DeviceID';
-        }
+        sql += columnCondition + ` WHERE ID = x'${data.id}'`;
     }
-    else if(data.column == 'pos_x' || data.comumn == 'pos_y' || data.column == 'size_x' || data.column == 'size_y') {
-        values = [parseFloat(data.new_value)]
+    else if(data.data_type == 'pri_beacon' || data.data_type == "Pri_Beacon") {
+        sql = `UPDATE pri_beacon SET`;
+        if(data.min_rssi != undefined) {
+            columnCondition += ` Min_RSSI = ${data.min_rssi}`;
+        }
+        if(data.max_rssi != undefined) {
+            if(columnCondition != "") {
+                columnCondition += `,`;
+            }
+            columnCondition += ` Max_RSSI = ${data.max_rssi}`;
+        }
+
+        sql += columnCondition + ` WHERE BeaconID = x'${data.beacon_id}' AND SpaceID = x'${data.space_id}'`;
     }
-    else if(data.column == 'power' || data.column == 'interval_time' || data.comumn == 'expire_count' || data.column == 'min_rssi' || data.column == 'max_rssi') {
-        values = [parseInt(data.new_value)]
+    else if(data.data_type == 'router' || data.data_type == 'Router') {
+        sql = `UPDATE router SET`;
+        if(data.ssid != undefined) {
+            columnCondition += ` SSID = '${data.ssid}'`;
+        }
+
+        sql += columnCondition + ` WHERE ID = x'${data.id}'`;
+    }
+    else if(data.data_type == 'pri_router' || data.data_type == "Pri_Router") {
+        sql = `UPDATE pri_router SET`;
+        if(data.min_rssi != undefined) {
+            columnCondition += ` Min_RSSI = ${data.min_rssi}`
+        }
+        if(data.max_rssi != undefined) {
+            if(columnCondition != "") {
+                columnCondition += `,`;
+            }
+            columnCondition += ` Max_RSSI = ${data.max_rssi}`;
+        }
+
+        sql += columnCondition + ` WHERE RouterID = x'${data.router_id}' AND SpaceID = x'${data.space_id}'`;
+    }
+    else if(data.data_type == 'pos_data' || data.data_type == 'Pos_Data' || data.data_type == 'pos_Data') {
+        sql = `UPDATE pos_data SET `;
+        if(data.space_id != undefined) {
+            columnCondition += ` SpaceID = x'${data.space_id}'`;
+        }
+        if(data.pos_x != undefined) {
+            if(columnCondition != "") {
+                columnCondition += `,`;
+            }
+            columnCondition += ` Pos_X = ${data.pos_x}`
+        }
+        if(data.pos_y != undefined) {
+            if(columnCondition != "") {
+                columnCondition += `,`;
+            }
+            columnCondition += ` Pos_Y = ${data.pos_y}`;
+        }
+
+        sql += columnCondition + ` WHERE DeviceID = x'${data.device_id}'`;
     }
     else {
-        values = [data.new_value];
+        console.log('error : there are no table');
+        return;
     }
-
-    const sql = `UPDATE ${data.data_type} SET ${data.column} = ? ` + WhereCondition;
 
     const connection = await connectDatabase();
 
     // 조립된 쿼리문 실행
     try {
         console.log(sql);
-        const [rows, fields] = await connection.execute(sql, values);
-        console.log(`${data.column} row(s) update complete`);
+        const [rows, fields] = await connection.execute(sql);
+        console.log(`${data.data_type} update complete`);
         update_ok = 1;
 
     } catch (error) {
@@ -348,50 +407,47 @@ async function update_db(data) {
 
 async function delete_db(data) {
 
-    var WhereCondition = "";
+    var sql = "";
 
-    // 쿼리문 조립
-    if(data.id != undefined) {
-        if(data.setTarget == '1') { // ID의 값으로 하나의 아이템을 검색하는 경우
-            WhereCondition = ` Where ID = x'${data.id}'`;
-        }
-        else {
-            // ID의 타입을 확인
-            const dataType = GetTypeByID(data.id);
-
-            if(dataType == 'space') { // space ID로 검색하고자 하는 경우
-                WhereCondition += ` WHERE SpaceID = x'${data.id}'`
-            }
-            else if(dataType == 'user') { // user ID로 검색하고자 하는 경우
-                WhereCondition += ` WHERE UserID = x'${data.id}'`
-            }
-            else { // 비적합한 ID
-                console.log ("error : it's invalid ID");
-                update_ok = 0;
-            }
-        }
-
+    // 테이블마다 가지고 있는 칼럼이 다르므로 경우를 나눠 처리
+    if(data.data_type == 'home' || data.data_type == 'Home') {
+        sql = `DELETE FROM home WHERE Home_name = '${data.home_name}'`;
+    }
+    else if(data.data_type == 'space' || data.data_type == 'Space') {
+        sql = `DELETE FROM space WHERE ID = x'${data.id}'`;
+    }
+    else if(data.data_type == 'user' || data.data_type == 'User') {
+        sql = `DELETE FROM user WHERE ID = x'${data.id}'`;
+    }
+    else if(data.data_type == 'device' || data.data_type == 'Device') {
+        sql = `DELETE FROM device WHERE ID = x'${data.id}'`;
+    }
+    else if(data.data_type == 'beacon' || data.data_type == 'Beacon') {
+        sql = `DELETE FROM beacon WHERE ID = x'${data.id}'`;
+    }
+    else if(data.data_type == 'pri_beacon' || data.data_type == "Pri_Beacon") {
+        sql = `DELETE FROM pri_beacon WHERE BeaconID = x'${data.beacon_id}' AND SpaceID = x'${data.space_id}'`;
+    }
+    else if(data.data_type == 'router' || data.data_type == 'Router') {
+        sql = `DELETE FROM router WHERE ID = x'${data.id}'`;
+    }
+    else if(data.data_type == 'pri_router' || data.data_type == "Pri_Router") {
+        sql = `DELETE FROM pri_router WHERE RouterID = x'${data.router_id}' AND SpaceID = x'${data.space_id}'`;
+    }
+    else if(data.data_type == 'pos_data' || data.data_type == 'Pos_Data' || data.data_type == 'pos_Data') {
+        sql = `DELETE FROM pos_data WHERE DeviceID = x'${data.device_id}' AND SpaceID = x'${data.space_id}'`;
+    }
+    else {
+        console.log('error : there are no table');
+        return;
     }
 
-    if(data.isPrimary == true) { // isPrimary = true 인 아이템을 찾고 싶은 경우
-        if(WhereCondition != "") {
-            WhereCondition += ' AND';
-        }
-        else {
-            WhereCondition += ' WHERE';
-        }
-        
-        WhereCondition += ' isPrimary = 1';
-    }
-    
-    var query = `DELETE FROM ${data.data_type}` + WhereCondition;
-    console.log(query);
     const connection = await connectDatabase();
 
     // 조립된 쿼리문 실행
     try {
 
-        const results = await connection.execute(query);
+        const results = await connection.execute(sql);
 
         var res_data = {
             'delete_ok': "0",
