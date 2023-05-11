@@ -53,13 +53,13 @@ async function select_db(data) {
             sql += ` WHERE SpaceID = x'${data.space_id}' AND isPrimary = ${data.isprimary}`;
         }
     }
-    else if(data.data_type == 'pri_beacon' || data.data_type == "Pri_Beacon") {
+    else if(data.data_type == 'pri_beacon' || data.data_type == "PRI_Beacon") {
         sql = `SELECT * FROM pri_beacon`;
     }
     else if(data.data_type == 'router' || data.data_type == 'Router') {
         sql = `SELECT * FROM router`;
     }
-    else if(data.data_type == 'pri_router' || data.data_type == "Pri_Router") {
+    else if(data.data_type == 'pri_router' || data.data_type == "PRI_Router") {
         sql = `SELECT * FROM pri_router`;
     }
     else if(data.data_type == 'pos_data' || data.data_type == 'Pos_Data' || data.data_type == 'pos_Data') {
