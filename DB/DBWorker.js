@@ -37,5 +37,46 @@ parentPort.on('message', async (message) => {
         var results = await http_get_db();
         parentPort.postMessage({"type": Command, "results": results});
     }
+    else if(Command == 'home_setup') {
+        // 홈 데이터가 있는 지 확인
+        var results = await select_db(Data);
+        if(results != 0) { // 홈 데이터가 이미 있는 경우
+            console.log('there already exsists HomeData');
+            parentPort.postMessage({"type": Command, "results": results});
+
+        }
+        else { // 홈 데이터가 없는 경우
+            console.log("there are no HomeData");
+
+            // 홈 데이터 등록
+            var results = await insert_db(Data);
+            parentPort.postMessage({"type": Command, "results": results});
+        }
+
+    }
+    else if(Command == 'data_register') {
+
+        // TODO : 데이터 등록 처리
+
+    }
+    else if(Command == 'device_register') {
+
+        var results = await select_db(Data);
+        console.log(results);
+        
+        if(results != 0) { // 디바이스가 이미 존재하는 경우
+            console.log('there already exsists DeviceData');
+
+        }
+        else { // 디바이스가 없는 경우
+            console.log("there are no Device");
+
+            // 디바이스 등록
+            var results = insert_db(Data);
+
+            // TODO : 등록 후 처리
+        }
+    }
+    
 
 });

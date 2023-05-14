@@ -37,9 +37,14 @@ async function select_db(data) {
     }
     else if(data.data_type == 'device' || data.data_type == 'Device') {
         sql = `SELECT * FROM device`;
-        if(data.user_id != undefined) {
+        
+        if(data.id != undefined) {
+            sql += ` WHERE ID = x'${data.id}'`
+        }
+        else if(data.user_id != undefined) {
             sql += ` WHERE UserID = x'${data.user_id}'`
         }
+        
     }
     else if(data.data_type == 'beacon' || data.data_type == 'Beacon') {
         sql = `SELECT * FROM beacon`;
@@ -74,6 +79,7 @@ async function select_db(data) {
 
     try {
 
+        console.log(sql);
         const [results, fields] = await connection.execute(sql);
 
         const resultArray = [];
@@ -136,10 +142,9 @@ async function select_db(data) {
                 jsonObject['pos_y'] = rowObject.Pos_Y.toString();
             }
 
-            console.log(jsonObject);
             resultArray.push(jsonObject);
         }
-
+        
         return resultArray;
         
     } catch (error) {
@@ -240,20 +245,17 @@ async function insert_db(data) {
     
     try {
 
+        console.log(sql);
         await connection.execute(query, values);
         console.log('Data inserted successfully');
+        return data;
         
     } catch (error) {
         console.error('Error inserting data:', error);
+        return undefined;
+
     } finally {
         connection.end();
-
-        var res_data = {
-            'id': genearted_id,
-            'table': data.data_type
-        }
-        
-        return res_data;
     }
 
 }
@@ -447,6 +449,7 @@ async function delete_db(data) {
     // 조립된 쿼리문 실행
     try {
 
+        console.log(sql);
         const results = await connection.execute(sql);
 
         var res_data = {
