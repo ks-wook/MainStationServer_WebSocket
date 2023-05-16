@@ -141,7 +141,6 @@ async function select_db(data) {
                 jsonObject['pos_y'] = rowObject.Pos_Y.toString();
             }
 
-            console.log(jsonObject);
             resultArray.push(jsonObject);
         }
 
@@ -323,14 +322,10 @@ async function update_db(data) {
     }
     else if(data.data_type == 'device' || data.data_type == 'Device') {
         sql = `UPDATE Device SET`;
-
-        if(data.id != undefined) {
-            sql += ` WHERE ID = x'${data.id}'`
+        if(data.state != undefined) {
+            columnCondition += ` STATE = x'${data.state}'`
         }
-        else if(data.user_id != undefined) {
-            sql += ` WHERE UserID = x'${data.user_id}'`
-        }
-
+        
         sql += columnCondition + ` WHERE ID = x'${data.id}'`
     }
     else if(data.data_type == 'beacon' || data.data_type == 'Beacon') {
