@@ -8,7 +8,7 @@ const DBworker = new Worker('./DB/DBWorker.js');
 var clients = {};
 var ServerPort = 8710;
 
-
+// 서버 시작 처리
 function startServer() {
     
     const express = require('express');
@@ -28,18 +28,15 @@ function startServer() {
     http.listen(ServerPort, () => {
         console.log(`listening on MainStation Connection*:${ServerPort}`);
     });
-
-    
 }
 
 
 
-
-// Session EventHandler
+// ----------------Session EventHandler-------------------
 function OnConnect(socket) {
-    console.log('-------------------------------');
-    console.log(`a user connected : ${socket.id}`);
-    console.log('-------------------------------');
+    console.log('----------------------------------------------------------');
+    console.log(`Client (${socket.id}) Connected!!!`);
+    console.log('----------------------------------------------------------');
    
     // 고유한 ID 생성
     const clientId = Math.random().toString(36).substring(2, 9);
@@ -53,10 +50,10 @@ function OnConnect(socket) {
     socket.on('disconnect', OnDisconnect);
 
     // DB 이벤트 등록
-    socket.on('select', OnSelectDB);
-    socket.on('insert', OnInsertDB);
-    socket.on('update', OnUpdateDB);
-    socket.on('delete', OnDeleteDB);
+    socket.on('data_request', OnSelectDB);
+    socket.on('data_register', OnDataRegister);
+    socket.on('data_update', OnUpdateDB);
+    socket.on('data_delete', OnDeleteDB);
 
 
     // MainStation 이벤트 등록
@@ -69,29 +66,47 @@ function OnConnect(socket) {
     // db worker thread 이벤트 등록
     DBworker.on('message', (message) => {
         if(message.type == 'select') {
-            socket.emit('select_result', message.results);
+            console.log(message.results);
+            socket.emit('data_request_response', message.results);
+
+            console.log('----------------------------------------------------------');
         }
         else if(message.type == 'insert') {
-            socket.emit('insert_result', message.results);
+            console.log(message.results);
+            socket.emit('data_register_response', message.results);
+
+            console.log('----------------------------------------------------------');
         }
         else if(message.type == 'update') {
-            socket.emit('update_result', message.results);
+            console.log(message.results);
+            socket.emit('data_update_response', message.results);
+
+            console.log('----------------------------------------------------------');
         }
         else if(message.type == 'delete') {
-            socket.emit('delete_result', message.results);
+            console.log(message.results);
+            socket.emit('data_delete_response', message.results);
+
+            console.log('----------------------------------------------------------');
         }
         else if(message.type == 'device_register') {
-            console.log(message.results);
-            // TODO : 디바이스 등록 이벤트 응답 처리
+            // console.log(message.results);
+            socket.emit('device_register_response', message.results);
+
+            console.log('----------------------------------------------------------');
         }
         else if(message.type == 'home_setup') {
             console.log(message.results);
             socket.emit('home_setup_response', message.results);
+
+            console.log('----------------------------------------------------------');
         }
     });
 
     IpscalWorker.on('message', (message) => {
         // TODO : Position data 갱신
+
+
         console.log(message);
     });
 
@@ -135,94 +150,74 @@ function OnTestSend(socket) {
 
 
 function OnDisconnect(socket, clientId) {
-    // 연결이 끊긴 클라이언트 삭제
-    delete clients[clientId];
-    console.log('-------------------------------');
-    console.log(`user(${clientId}) disconnected`);
-    console.log('-------------------------------');
+    console.log('----------------------------------------------------------');
+    console.log(`Client (${socket.id}) Disconnected!!!`);
+    console.log('----------------------------------------------------------');
 }
+// --------------------------------------------------------
 
 
 
 
-// DB EventHandler
+// ----------------DataBase EventHandler-------------------
 async function OnSelectDB(data) {
-    
-    console.log('-------------------------------');
-    console.log(`select ${data.data_type} table request`);
+    console.log('----------------------------------------------------------');
+    console.log(`Client [${this.id} Data Request with...]`);
 
     // 실행시킬 작업을 워커 스레드로 전송
     DBworker.postMessage({"type": 'select', "data": data});
-
-    // await select_db(data, this);
-    
-    console.log('-------------------------------');
 }
 
-async function OnInsertDB(data) {
+async function OnDataRegister(data) { // 디바이스와 홈을 제외한 나머지 데이터 등록 처리
+    console.log('----------------------------------------------------------');
+    console.log(`Client [${this.id} Data Register with...]`);
     
-    console.log('-------------------------------');
-    console.log(`insert ${data.data_type} table request`);
-    
-    // await insert_db(data, this);
+    // 실행시킬 작업을 워커 스레드로 전송
     DBworker.postMessage({"type": 'insert', "data": data});
-
-
-    console.log('-------------------------------');
-    
 }
 
 async function OnUpdateDB(data) {
 
     // 데이터에는 수정할 항목의 ID와 table, 수정하고자하는 col의 이름과 업데이트 값을 담아 가져와야 한다.
-    console.log('-------------------------------');
-    console.log(`update ${data.data_type} table request`);
+    console.log('----------------------------------------------------------');
+    console.log(`Client [${this.id} Data Update with...]`);
     
+    // 실행시킬 작업을 워커 스레드로 전송
     DBworker.postMessage({"type": 'update', "data": data});
-
-    // 업데이트에 대해서는 수정된 아이템의 ID만 같이 전송함
-    console.log('-------------------------------');
 }
 
 async function OnDeleteDB(data) {
     // 데이터에는 수정할 항목의 ID와 table, 수정하고자하는 col의 이름과 업데이트 값을 담아 가져와야 한다.
-    console.log('-------------------------------');
-    console.log(`delete ${data.data_type} table request`);
+    console.log('----------------------------------------------------------');
+    console.log(`Client [${this.id} Data Delete with...]`);
     
+    // 실행시킬 작업을 워커 스레드로 전송
     DBworker.postMessage({"type": 'delete', "data": data});
-
-    // 업데이트에 대해서는 수정된 아이템의 ID만 같이 전송함
-    console.log('-------------------------------');
 }
+// --------------------------------------------------------
 
 
 
 
 
-// MainStation EventHandler
-async function OnDataRegister(data) {
-    // TODO
-}
 
+// --------------MainStation EventHandler-------------------
+async function OnDeviceRegitster(data) { // 디바이스 등록 처리
+    console.log('----------------------------------------------------------');
+    console.log(`Client [${this.id}] Device Session & Data Register with...`);
 
-async function OnDeviceRegitster(data) {
-    console.log('-------------------------------');
-    console.log('Device register request');
+    data.sid = this.id; // session id 부여
 
     DBworker.postMessage({"type": 'device_register', "data": data});
-
-    console.log('-------------------------------');
-
 }
 
 
-async function OnHomeSetup(data) {
-    console.log('-------------------------------');
-    console.log('home setup request');
+async function OnHomeSetup(data) { // 홈 등록 처리
+    console.log('----------------------------------------------------------');
+    console.log(`Client [${this.id} Home Setup Data Register with...]`);
 
     DBworker.postMessage({"type": 'home_setup', "data": data});
-
-    console.log('-------------------------------');
 }
+// --------------------------------------------------------
 
 module.exports = {startServer};

@@ -78,8 +78,7 @@ async function select_db(data) {
     const connection = await connectDatabase(); // db connect
 
     try {
-
-        console.log(sql);
+        // console.log(sql);
         const [results, fields] = await connection.execute(sql);
 
         const resultArray = [];
@@ -157,7 +156,7 @@ async function select_db(data) {
 
 async function insert_db(data) {
 
-    var query = null;
+    var sql = null;
     var values = null;
 
     var genearted_id = GenerateID(`${data.data_type}`);
@@ -174,22 +173,22 @@ async function insert_db(data) {
             Expire_count = '5';
         }
 
-        query = `INSERT INTO home (Home_name, Interval_time, Expire_count) VALUES (?, ?, ?)`;
+        sql = `INSERT INTO home (Home_name, Interval_time, Expire_count) VALUES (?, ?, ?)`;
         values = [data.home_name, parseInt(Interval_time), parseInt(Expire_count)];
     }
     else if(data.data_type == 'space' || data.data_type == 'Space') {
-        query = `INSERT INTO space (ID, familiar_name, size_x, size_y) VALUES (${genearted_id}, ?, ?, ?)`;
+        sql = `INSERT INTO space (ID, familiar_name, size_x, size_y) VALUES (${genearted_id}, ?, ?, ?)`;
         values = [data.familiar_name, data.size_x, data.size_y];
     }
     else if(data.data_type == 'user' || data.data_type == 'User') {
-        query = `INSERT INTO user (ID, User_name) VALUES (${genearted_id}, ?)`;
+        sql = `INSERT INTO user (ID, User_name) VALUES (${genearted_id}, ?)`;
         values = [data.user_name];
     }
     else if(data.data_type == 'device' || data.data_type == 'Device') {
         const State = Buffer.from([0x00, 0x00]); // state는 최초 삽입 시, 00으로 들어가게 된다.
         const UserID = Buffer.from(data.user_id, 'hex'); // 주인의 ID는 user에 속한 ID여야 한다.
 
-        query = `INSERT INTO device (ID, familiar_name, State, UserID) VALUES (${genearted_id}, ?, ?, ?)`;
+        sql = `INSERT INTO device (ID, familiar_name, State, UserID) VALUES (${genearted_id}, ?, ?, ?)`;
         values = [data.familiar_name, State, UserID];
     }
     else if(data.data_type == 'beacon' || data.data_type == 'Beacon') {
@@ -197,27 +196,27 @@ async function insert_db(data) {
         const beacon_id = Buffer.from(data.beacon_id, 'hex');
         const space_id = Buffer.from(data.space_id, 'hex'); // 16진수 문자열을 이진 데이터로 변환
         
-        query = `INSERT INTO beacon (ID, State, SpaceID, Pos_X, Pos_Y, Power, isPrimary) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+        sql = `INSERT INTO beacon (ID, State, SpaceID, Pos_X, Pos_Y, Power, isPrimary) VALUES (?, ?, ?, ?, ?, ?, ?)`;
         values = [beacon_id, State, space_id, parseFloat(data.pos_x), parseFloat(data.pos_y), parseInt(data.power), data.isPrimary];
     }
     else if(data.data_type == 'pri_beacon' || data.data_type == "Pri_Beacon") {
         const beacon_id = Buffer.from(data.beacon_id, 'hex'); // 16진수 문자열을 이진 데이터로 변환
         const space_id = Buffer.from(data.space_id, 'hex'); // 16진수 문자열을 이진 데이터로 변환
 
-        query = `INSERT INTO pri_beacon (BeaconID, SpaceID, Min_RSSI, Max_RSSI) VALUES (?, ?, ?, ?)`;
+        sql = `INSERT INTO pri_beacon (BeaconID, SpaceID, Min_RSSI, Max_RSSI) VALUES (?, ?, ?, ?)`;
         values = [beacon_id, space_id, parseInt(data.min_rssi), parseInt(data.max_rssi)];
     }
     else if(data.data_type == 'router' || data.data_type == 'Router') {
         const MacAdr = Buffer.from(data.mac, 'hex');
 
-        query = `INSERT INTO router (ID, SSID, MAC) VALUES (${genearted_id}, ?, ?)`;
+        sql = `INSERT INTO router (ID, SSID, MAC) VALUES (${genearted_id}, ?, ?)`;
         values = [data.ssid, MacAdr];
     }
     else if(data.data_type == 'pri_router' || data.data_type == "Pri_Router") {
         const RouterID = Buffer.from(data.router_id, 'hex'); // 16진수 문자열을 이진 데이터로 변환
         const SpaceID = Buffer.from(data.space_id, 'hex'); // 16진수 문자열을 이진 데이터로 변환
 
-        query = `INSERT INTO pri_router (RouterID, SpaceID, Min_RSSI, Max_RSSI) VALUES (?, ?, ?, ?)`;
+        sql = `INSERT INTO pri_router (RouterID, SpaceID, Min_RSSI, Max_RSSI) VALUES (?, ?, ?, ?)`;
         values = [RouterID, SpaceID, parseInt(data.min_rssi), parseInt(data.max_rssi)];
     }
     else if(data.data_type == 'pos_data' || data.data_type == 'Pos_Data' || data.data_type == 'pos_Data') {
@@ -233,7 +232,7 @@ async function insert_db(data) {
             Pos_Y = '0.0';
         }
 
-        query = `INSERT INTO pos_data (DeviceID, SpaceID, Pos_X, Pos_Y) VALUES (?, ?, ?, ?)`;
+        sql = `INSERT INTO pos_data (DeviceID, SpaceID, Pos_X, Pos_Y) VALUES (?, ?, ?, ?)`;
         values = [DeviceID, SpaceID, parseFloat(Pos_X), parseFloat(Pos_Y)];
     }
     else {
@@ -242,13 +241,23 @@ async function insert_db(data) {
     }
 
     const connection = await connectDatabase();
-    
-    try {
+    var response_valid = false;
+    var response_values = {
+        "data_type": data.data_type,
+        "msg": "Register Failed"
+    };
 
-        console.log(sql);
-        await connection.execute(query, values);
+    try {
+        // console.log(sql);
+        await connection.execute(sql, values);
         console.log('Data inserted successfully');
-        return data;
+
+        var response_valid = true;
+        var response_values = {
+            "msg": "Register Success",
+            "id": genearted_id
+        };
+
         
     } catch (error) {
         console.error('Error inserting data:', error);
@@ -257,6 +266,13 @@ async function insert_db(data) {
     } finally {
         connection.end();
     }
+
+    const response = {
+        "valid": response_valid,
+        "values": response_values
+    };
+
+    return response;
 
 }
 
@@ -386,25 +402,31 @@ async function update_db(data) {
     }
 
     const connection = await connectDatabase();
+    var response_valid = false;
+    var response_values = {
+        "data_type": data.data_type,
+        "msg": "Update Failed"
+    };
 
     // 조립된 쿼리문 실행
     try {
-        console.log(sql);
+        // console.log(sql);
         const [rows, fields] = await connection.execute(sql);
-        console.log(`${data.data_type} update complete`);
-        update_ok = 1;
+        response_valid = true;
+        response_values.msg = "Update Success";
 
     } catch (error) {
         console.error(`Error updating data: ${error}`);
-        update_ok = 0;
+        response_valid = false;
+        response_values.msg = "Update Failed";
     }
 
+    const response = {
+        "valid": response_valid,
+        "values": response_values
+    };
 
-    var res_data = {
-        'update_ok': update_ok.toString(),
-    }
-
-    return res_data;
+    return response;
 }
 
 async function delete_db(data) {
@@ -448,8 +470,7 @@ async function delete_db(data) {
 
     // 조립된 쿼리문 실행
     try {
-
-        console.log(sql);
+        // console.log(sql);
         const results = await connection.execute(sql);
 
         var res_data = {
