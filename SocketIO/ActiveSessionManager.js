@@ -18,6 +18,29 @@ class ActiveSessionManager {
         this._sessionInfoDict = {};
 
     }
+
+    async BeaconStateUpdate(beaconRssiData) { // 비콘 state 업데이트
+
+        var conclusion = true;
+
+        for(let i = 0; i < beaconRssiData.length; i++) { // 리스트 형태로 여러개의 비콘 상태를 받고, 갱신
+            const beacon_id = beaconRssiData[i].id;
+            const beacon_state = beaconRssiData[i].state;
+
+            const data = {
+                "id": beacon_id,
+                "data_type": "Beacon",
+                "state": beacon_state
+            }
+
+            const response = await update_db(data);
+            if(response.valid == false) {
+                conclusion = false;
+            }
+        }
+
+        return conclusion;
+    }
   
     async DeviceConnect(sessionId, deviceId) { // 디바이스 연결 시 처리
         this._activeDeviceIds.push(deviceId);
@@ -81,6 +104,13 @@ class ActiveSessionManager {
             return response;
         }
     }
+
+    GetActiveDeviceId(sessionId) {
+        const device_id = this._sessionInfoDict[sessionId];
+        console.log(this._sessionInfoDict);
+        return device_id;
+    }
 }
   
 module.exports = ActiveSessionManager;
+

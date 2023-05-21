@@ -31,6 +31,10 @@ async function select_db(data) {
     }
     else if(data.data_type == 'space' || data.data_type == 'Space') {
         sql = `SELECT * FROM space`;
+        
+        if(data.id != undefined) {
+            sql += ` WHERE ID = x'${data.id}'`
+        }
     }
     else if(data.data_type == 'user' || data.data_type == 'User') {
         sql = `SELECT * FROM user`;
@@ -92,12 +96,14 @@ async function select_db(data) {
 
             if(data.data_type == 'home' || data.data_type == 'Home') {
                 jsonObject['home_name'] = rowObject.Home_name.toString();
-                jsonObject['interval_time'] = rowObject.Interval_time.toString();
-                jsonObject['expire_count'] = rowObject.Expire_count.toString();
+                jsonObject['interval_time'] = rowObject.Interval_time;
+                jsonObject['expire_count'] = rowObject.Expire_count;
             }
             else if(data.data_type == 'space' || data.data_type == 'Space') {
                 jsonObject['id'] = rowObject.ID.toString('hex');
                 jsonObject['familiar_name'] = rowObject.Familiar_name;
+                jsonObject['size_x'] = rowObject.Size_X;
+                jsonObject['size_y'] = rowObject.Size_Y;
             }
             else if(data.data_type == 'user' || data.data_type == 'User') {
                 jsonObject['id'] = rowObject.ID.toString('hex');
@@ -112,16 +118,16 @@ async function select_db(data) {
             else if(data.data_type == 'beacon' || data.data_type == 'Beacon') {
                 jsonObject['id'] = rowObject.ID.toString('hex');
                 jsonObject['state'] = rowObject.State.toString('hex');
-                jsonObject['pos_x'] = rowObject.Pos_X.toString();
-                jsonObject['pos_y'] = rowObject.Pos_Y.toString();
-                jsonObject['power'] = rowObject.Power.toString();
+                jsonObject['pos_x'] = rowObject.Pos_X;
+                jsonObject['pos_y'] = rowObject.Pos_Y;
+                jsonObject['power'] = rowObject.Power;
                 jsonObject['isPrimary'] = rowObject.isPrimary.toString();
             }
             else if(data.data_type == 'pri_beacon' || data.data_type == "Pri_Beacon") {
                 jsonObject['beacon_id'] = rowObject.BeaconID.toString('hex');
                 jsonObject['space_id'] = rowObject.SpaceID.toString('hex');
-                jsonObject['min_rssi'] = rowObject.Min_RSSI.toString();
-                jsonObject['max_rssi'] = rowObject.Max_RSSI.toString();
+                jsonObject['min_rssi'] = rowObject.Min_RSSI;
+                jsonObject['max_rssi'] = rowObject.Max_RSSI;
             }
             else if(data.data_type == 'router' || data.data_type == 'Router') {
                 jsonObject['id'] = rowObject.ID.toString('hex');
@@ -131,14 +137,14 @@ async function select_db(data) {
             else if(data.data_type == 'pri_router' || data.data_type == "Pri_Router") {
                 jsonObject['router_id'] = rowObject.RouterID.toString('hex');
                 jsonObject['space_id'] = rowObject.SpaceID.toString('hex');
-                jsonObject['min_rssi'] = rowObject.Min_RSSI.toString();
-                jsonObject['max_rssi'] = rowObject.Max_RSSI.toString();
+                jsonObject['min_rssi'] = rowObject.Min_RSSI;
+                jsonObject['max_rssi'] = rowObject.Max_RSSI;
             }
             else if(data.data_type == 'pos_Data' || data.data_type == 'Pos_Data' || data.data_type == 'pos_data') {
                 jsonObject['device_id'] = rowObject.DeviceID.toString('hex');
                 jsonObject['space_id'] = rowObject.SpaceID.toString('hex');
-                jsonObject['pos_x'] = rowObject.Pos_X.toString();
-                jsonObject['pos_y'] = rowObject.Pos_Y.toString();
+                jsonObject['pos_x'] = rowObject.Pos_x;
+                jsonObject['pos_y'] = rowObject.Pos_Y;
             }
 
             resultArray.push(jsonObject);
@@ -252,8 +258,8 @@ async function insert_db(data) {
         await connection.execute(sql, values);
         console.log('Data inserted successfully');
 
-        var response_valid = true;
-        var response_values = {
+        response_valid = true;
+        response_values = {
             "msg": "Register Success",
             "id": genearted_id
         };

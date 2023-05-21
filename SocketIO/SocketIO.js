@@ -50,40 +50,40 @@ function OnConnect(socket) {
     socket.on('disconnect', OnDisconnect);
 
     // DB 이벤트 등록
-    socket.on('data_request', OnSelectDB);
+    socket.on('data_request', OnDataRequest);
     socket.on('data_register', OnDataRegister);
-    socket.on('data_update', OnUpdateDB);
-    socket.on('data_delete', OnDeleteDB);
+    socket.on('device_register', OnDeviceRegitster);
+    socket.on('home_setup', OnHomeSetup);
+    socket.on('data_update', OnDataUpdate);
+    socket.on('data_delete', OnDataDelete);
 
 
     // MainStation 이벤트 등록
-    socket.on('home_setup', OnHomeSetup);
-    socket.on('data_register', OnDataRegister);
-    socket.on('device_register', OnDeviceRegitster);
-
+    socket.on('ips_space', OnIpsSpace);
+    socket.on('ips_final', OnIpsFinal);
 
 
     // db worker thread 이벤트 등록
     DBworker.on('message', (message) => {
-        if(message.type == 'select') {
+        if(message.type == 'data_request') {
             console.log(message.results);
             socket.emit('data_request_response', message.results);
 
             console.log('----------------------------------------------------------');
         }
-        else if(message.type == 'insert') {
+        else if(message.type == 'data_register') {
             console.log(message.results);
             socket.emit('data_register_response', message.results);
 
             console.log('----------------------------------------------------------');
         }
-        else if(message.type == 'update') {
+        else if(message.type == 'data_update') {
             console.log(message.results);
             socket.emit('data_update_response', message.results);
 
             console.log('----------------------------------------------------------');
         }
-        else if(message.type == 'delete') {
+        else if(message.type == 'data_delete') {
             console.log(message.results);
             socket.emit('data_delete_response', message.results);
 
@@ -101,13 +101,29 @@ function OnConnect(socket) {
 
             console.log('----------------------------------------------------------');
         }
+        else if(message.type == 'ips_space') {
+            // console.log(message.results);
+
+            console.log(`Response to Client [${socket.id}] IPS Space Calculate with...`);
+            console.log(`Data ${message.results}`);
+
+            socket.emit('ips_space_response', message.results);
+
+            console.log('----------------------------------------------------------');
+        }
     });
 
     IpscalWorker.on('message', (message) => {
         // TODO : Position data 갱신
 
 
-        console.log(message);
+        if(message.type == 'space_calcluate') { // 현재 방 계산 요청 완료 수신
+            console.log(message.results);
+            socket.emit('ips_space_response', message.results);
+
+            console.log('----------------------------------------------------------');
+        }
+
     });
 
 
@@ -160,12 +176,12 @@ function OnDisconnect(socket, clientId) {
 
 
 // ----------------DataBase EventHandler-------------------
-async function OnSelectDB(data) {
+async function OnDataRequest(data) {
     console.log('----------------------------------------------------------');
     console.log(`Client [${this.id} Data Request with...]`);
 
     // 실행시킬 작업을 워커 스레드로 전송
-    DBworker.postMessage({"type": 'select', "data": data});
+    DBworker.postMessage({"type": 'data_request', "data": data});
 }
 
 async function OnDataRegister(data) { // 디바이스와 홈을 제외한 나머지 데이터 등록 처리
@@ -173,35 +189,9 @@ async function OnDataRegister(data) { // 디바이스와 홈을 제외한 나머
     console.log(`Client [${this.id} Data Register with...]`);
     
     // 실행시킬 작업을 워커 스레드로 전송
-    DBworker.postMessage({"type": 'insert', "data": data});
+    DBworker.postMessage({"type": 'data_register', "data": data});
 }
 
-async function OnUpdateDB(data) {
-
-    // 데이터에는 수정할 항목의 ID와 table, 수정하고자하는 col의 이름과 업데이트 값을 담아 가져와야 한다.
-    console.log('----------------------------------------------------------');
-    console.log(`Client [${this.id} Data Update with...]`);
-    
-    // 실행시킬 작업을 워커 스레드로 전송
-    DBworker.postMessage({"type": 'update', "data": data});
-}
-
-async function OnDeleteDB(data) {
-    // 데이터에는 수정할 항목의 ID와 table, 수정하고자하는 col의 이름과 업데이트 값을 담아 가져와야 한다.
-    console.log('----------------------------------------------------------');
-    console.log(`Client [${this.id} Data Delete with...]`);
-    
-    // 실행시킬 작업을 워커 스레드로 전송
-    DBworker.postMessage({"type": 'delete', "data": data});
-}
-// --------------------------------------------------------
-
-
-
-
-
-
-// --------------MainStation EventHandler-------------------
 async function OnDeviceRegitster(data) { // 디바이스 등록 처리
     console.log('----------------------------------------------------------');
     console.log(`Client [${this.id}] Device Session & Data Register with...`);
@@ -214,9 +204,51 @@ async function OnDeviceRegitster(data) { // 디바이스 등록 처리
 
 async function OnHomeSetup(data) { // 홈 등록 처리
     console.log('----------------------------------------------------------');
-    console.log(`Client [${this.id} Home Setup Data Register with...]`);
+    console.log(`Client [${this.id} Home Setup Data Register with...`);
 
     DBworker.postMessage({"type": 'home_setup', "data": data});
+}
+
+async function OnDataUpdate(data) {
+
+    // 데이터에는 수정할 항목의 ID와 table, 수정하고자하는 col의 이름과 업데이트 값을 담아 가져와야 한다.
+    console.log('----------------------------------------------------------');
+    console.log(`Client [${this.id}] Data Update with...`);
+    
+    // 실행시킬 작업을 워커 스레드로 전송
+    DBworker.postMessage({"type": 'data_update', "data": data});
+}
+
+async function OnDataDelete(data) {
+    // 데이터에는 수정할 항목의 ID와 table, 수정하고자하는 col의 이름과 업데이트 값을 담아 가져와야 한다.
+    console.log('----------------------------------------------------------');
+    console.log(`Client [${this.id} Data Delete with...]`);
+    
+    // 실행시킬 작업을 워커 스레드로 전송
+    DBworker.postMessage({"type": 'data_delete', "data": data});
+}
+// --------------------------------------------------------
+
+
+
+
+
+
+// --------------MainStation EventHandler-------------------
+async function OnIpsSpace(data) { // 현재 방의 위치 계산
+    console.log('----------------------------------------------------------');
+    data.sid = this.id;
+    console.log(`Client [${data.sid}] IPS space Calculate with...`);
+
+    DBworker.postMessage({"type": 'ips_space', "data": data});
+}
+
+async function OnIpsFinal(data) { // 현재 방에서의 좌표 계산
+    console.log('----------------------------------------------------------');
+    data.sid = this.id;
+    console.log(`Client [${data.sid}] IPS final Calculate with...`);
+
+    DBworker.postMessage({"type": 'ips_final', "data": data});
 }
 // --------------------------------------------------------
 
